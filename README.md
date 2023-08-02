@@ -19,6 +19,6 @@ Generative Adversarial Network Implementation for Drone Sensor Data
 
 2. Install required libraries: 
 
-  ```shell
-  pip install -r requirements.txt
+   ```shell
+   pip install -r requirements.txt
 
