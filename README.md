@@ -1,6 +1,7 @@
 # DroneGAN-Synthetic-Sensor-Time-Series-Data-Generation-using-GANs
 
 Generative Adversarial Network Implementation for Drone Sensor Data
+
 [brief_description]
 
 
