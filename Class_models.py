@@ -1,4 +1,14 @@
-# file to paste the various models to be used in main progrma, less clutter
+#!/usr/bin/env python3
+
+# Author: Mehmed Kerem Uludag (muludag)
+# Email: muludag@umich.edu
+# Institution: University of Michigan
+# Department: Computer Science & Engineering and Robotics
+# Date: July 28, 2023
+# Work: This work was started in the ADWISE Lab at Florida International University as part of the Research Expereince for Undergraduates program in the Summer of 2023. 
+# 
+# Description: Convolutional Neural Network Binary Classifier Architecture and Description to evaulate GAN generated data
+
 
 import numpy as np
 import tensorflow as tf
