@@ -1,4 +1,14 @@
-# Special file to preprocess and generate data from real drone sensors
+#!/usr/bin/env python3
+
+# Author: Mehmed Kerem Uludag (muludag)
+# Email: muludag@umich.edu
+# Institution: University of Michigan
+# Department: Computer Science & Engineering and Robotics
+# Date: July 28, 2023
+# Work: This work was started in the ADWISE Lab at Florida International University as part of the Research Expereince for Undergraduates program in the Summer of 2023. 
+#
+# Description: Generative Adverserial Network (GAN) implementation to to generate samples in intervals of real time series drone sensor data to be evaluated against classifiers
+
 
 import sys
 from pathlib import Path
@@ -11,9 +21,8 @@ import scipy.stats as ss
 import torch
 from torch import nn
 
-from data import (sample_noise, sample_1d_data, sample_drone_1d_data)
-from models import (Discriminator, Generator, TimeSeriesDiscriminator)
-from losses import (standard_d_loss, standard_g_loss, heuristic_g_loss, mse_loss)
+from data import (extract_drone_data)
+from GAN_models import (Discriminator, Generator)
 from utility import (clear_line, clear_patch)
 import pandas as pd
 from scipy import stats
@@ -25,18 +34,17 @@ import pdb
 #torch.cuda.manual_seed(SEED)
 
 
-
 def main(argv=[]): 
     # model params
     num_epochs: int = 400
-    minibatch_size: int = 30
+    minibatch_size: int = 25
     d_learning_rate: float = 0.0001
     g_learning_rate: float = 0.0001
     discriminator_optim: str = 'adam'
     generator_optim: str = 'sgd'
     loss_type: str = 'mse'
-    z_dim: int = 1
-    data_dim: int = 5
+    z_dim: int = 5
+    data_dim: int = 1
     d_hidden_size: int = 30
     g_hidden_size: int = 30
     progress_update_interval = 20
@@ -50,12 +58,15 @@ def main(argv=[]):
                       f'random seed: '
 
     # input data
-    N = 1000
-    data_dim = 1
+    N = 1500 #has to be divisble by minibatch size
+    datafile = 'ace-benign-log_0_2033-8-19-16-27-30_sensor_combined_0'
+    column_names = ['gyro_rad[0]']#, 'gyro_rad[1]', 'gyro_rad[2]']#, 'accelerometer_m_s2[0]', 'accelerometer_m_s2[1]', 'accelerometer_m_s2[2]']
+    outfilename = 'delete.csv'
+    #data_dim = 1
     train_labels = torch.zeros((N, data_dim))
-    _data = sample_drone_1d_data(N, torch.device('cpu')).numpy()
+    _data = extract_drone_data(N, column_names, datafile, torch.device('cpu')).numpy()
     train_data = torch.from_numpy(_data).float()
-    train_set = [(train_data[i], train_labels[i]) for i in range(N)]
+    #train_set = [(train_data[i], train_labels[i]) for i in range(N)]
     fig, ax_data, ax_loss, ax_disc = prepare_plots2(_data, experiment_info, '1D Gaussian')
 
     # switch to gpu for the hell of it
@@ -79,92 +90,146 @@ def main(argv=[]):
     d_g_z_list: list = []
 
     # setup for training data
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=minibatch_size, shuffle=False)
-    #pdb.set_trace()
+    K = minibatch_size # window height (by data_dim) # has to be equal to batch size for model
+    window_data = []
+    stride = K
+    for i in range(0, len(train_data) - K + 1, stride):
+        window = train_data[i:i+K]
+        window_data.append(window)
+    
+    # Create DataLoader objects for each window
+    # window_loaders = []
+    # for window in window_data:
+    #     window_loader = torch.utils.data.DataLoader(window, batch_size=minibatch_size, shuffle=False)
+    #     window_loaders.append(window_loader)
+    
+    
     # define loss function (test different loss functions, eventually implement custom one, Quantile Loss, Time Series Cross Entropy)
-    loss_function = nn.SmoothL1Loss()
+    
+    def handle_outliers(generated_samples_window):
+        # Calculate mean and standard deviation of the generated samples
+        window_mean = np.mean(generated_samples_window)
+        window_std = np.std(generated_samples_window)
+        print(window_mean, " ", window_std)
+        # Define the threshold as a range between -3 and 3 standard deviations
+        lower_threshold = window_mean - 1 * window_std
+        upper_threshold = window_mean + 1 * window_std
 
+        print(lower_threshold, " ", upper_threshold)
+        # Replace outliers with values within the threshold range
+        for i, sample in enumerate(generated_samples_window):
+            if sample < lower_threshold:
+                generated_samples_window[i] = lower_threshold
+            elif sample > upper_threshold:
+                generated_samples_window[i] = upper_threshold
+
+        return generated_samples_window
+    
+    
+    loss_function = nn.SmoothL1Loss()
+    
+    def apply_smoothening(data: torch.Tensor, smoothing_factor: float) -> torch.Tensor:
+        smoothed_data = [data[0]]
+        for i in range(1, len(data)):
+            smoothed_value = (1 - smoothing_factor) * smoothed_data[-1] + smoothing_factor * data[i]
+            smoothed_data.append(smoothed_value)
+        return torch.tensor(smoothed_data)
+
+
+    generated_samples_all_windows = []
+    
     # Training
     t1 = time()
-    for epoch in range(1, num_epochs + 1):
-        for n, (real_samples, _) in enumerate(train_loader):
-            # Data for training the discriminator
-            real_samples_labels = torch.ones((minibatch_size, 1))
-            latent_space_samples = torch.randn((minibatch_size, z_dim))
-            generated_samples = G(latent_space_samples)
-            generated_samples_labels = torch.zeros((minibatch_size, 1))
-            all_samples = torch.cat((real_samples, generated_samples))
-            all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
+    max_iter = num_epochs * len(window_data) // 10 # Maximum number of iterations
+    
+    for window in window_data:
+        window_loader = torch.utils.data.DataLoader(window, batch_size=minibatch_size, shuffle=False)
+        for iteration in range(1, max_iter + 1):
+            for n, samples in enumerate(window_loader):
+                if isinstance(samples, tuple):
+                    real_samples, _ = samples
+                else:
+                    real_samples = samples                
+                
+                # Data for training the discriminator
+                real_samples_labels = torch.ones((minibatch_size, 1))
+                latent_space_samples = torch.randn((minibatch_size, z_dim))
+                generated_samples = G(latent_space_samples)
+                generated_samples_labels = torch.zeros((minibatch_size, 1))
+                all_samples = torch.cat((real_samples, generated_samples))
+                all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
 
-            # Train Discriminator: 
-            D.zero_grad() # thid needed? 
-            output_discriminator = D(all_samples)
-            #pdb.set_trace()
-            loss_discriminator = loss_function(output_discriminator[0], all_samples_labels)
-            loss_discriminator.backward()
-            d_optimizer.step()
+                # Train Discriminator: 
+                D.zero_grad() # thid needed? 
+                output_discriminator = D(all_samples)
+                #pdb.set_trace()
+                loss_discriminator = loss_function(output_discriminator[0], all_samples_labels)
+                loss_discriminator.backward()
+                d_optimizer.step()
 
-            # Train Generator: 
-            latent_space_samples = torch.randn((minibatch_size, z_dim))
-            G.zero_grad()
-            generated_samples = G(latent_space_samples)
-            output_discriminator_generated = D(generated_samples)
-            loss_generator = loss_function(output_discriminator_generated[0], real_samples_labels)
-            loss_generator.backward()
-            g_optimizer.step()
+                # Train Generator: 
+                latent_space_samples = torch.randn((minibatch_size, z_dim))
+                G.zero_grad()
+                generated_samples = G(latent_space_samples)
+                # Apply smoothening
+                smoothing_factor = 0.01
+                #pdb.set_trace()
+                generated_samples_s = apply_smoothening(generated_samples, smoothing_factor).reshape(K, data_dim) #Could be just 1 instead of DATA_DIMSSSSSSSSSSSSSSSSS 
+                output_discriminator_generated = D(generated_samples)
+                loss_generator = loss_function(output_discriminator_generated[0], real_samples_labels)
+                loss_generator.backward()
+                g_optimizer.step()
 
-        # Print losses:
-        if epoch % progress_update_interval == 0 or epoch == num_epochs:
-            #print(f"Epoch: {epoch} Loss D.: {loss_discriminator}")
-            #print(f"Epoch: {epoch} Loss G.: {loss_generator}")
-            print(
-                    f'epoch: {epoch} '
-                    f'generator_loss: {loss_generator} '
-                    f'discriminator_loss: {loss_discriminator}')
-            
-            g_loss_list.append(loss_generator.tolist())
-            if 1 == 0:
-                # plot losses
-                update_loss_plot(
-                    ax_loss, d_real_loss_list, d_fake_loss_list, g_loss_list,
-                    progress_update_interval, show_separate_loss)
+            # Print losses:
+            if iteration % progress_update_interval == 0 or iteration == num_epochs:
+                #print(f"Epoch: {epoch} Loss D.: {loss_discriminator}")
+                #print(f"Epoch: {epoch} Loss G.: {loss_generator}")
+                print(
+                        f'iteration: {iteration} '
+                        f'generator_loss: {loss_generator} '
+                        f'discriminator_loss: {loss_discriminator}')
+                
+                g_loss_list.append(loss_generator.tolist())
+                if 1 == 0:
+                    # plot losses
+                    update_loss_plot(
+                        ax_loss, d_real_loss_list, d_fake_loss_list, g_loss_list,
+                        progress_update_interval, show_separate_loss)
 
-                # plot d(x) and d(g(z))
-                d_x_list.append(torch.mean(D(real_samples)).item())
-                d_g_z_list.append(torch.mean(G(latent_space_samples)).item())
-                update_disc_plot(ax_disc, d_x_list, d_g_z_list, progress_update_interval)
+                    # plot d(x) and d(g(z))
+                    d_x_list.append(torch.mean(D(real_samples)).item())
+                    d_g_z_list.append(torch.mean(G(latent_space_samples)).item())
+                    update_disc_plot(ax_disc, d_x_list, d_g_z_list, progress_update_interval)
 
-                # plot generated data
-                z = torch.randn(N, z_dim)
-                fake_data = G(z).detach().cpu().numpy()
-                update_data_plot(ax_data, D, fake_data, device)
+                    # plot generated data
+                    z = torch.randn(N, z_dim)
+                    fake_data = G(z).detach().cpu().numpy()
+                    update_data_plot(ax_data, D, fake_data, device)
 
-                # Refresh figure
-                fig.canvas.draw()
-                fig.canvas.flush_events()
+                    # Refresh figure
+                    fig.canvas.draw()
+                    fig.canvas.flush_events()
+                    
+        
+        z = torch.randn(K, z_dim)
+        generated_samples_window = G(z).detach().cpu().numpy()
+        generated_samples_window = handle_outliers(generated_samples_window)
+        generated_samples_all_windows.append(generated_samples_window)
 
-    plt.clf()
+
     x = np.arange(0, N)
-    latent_space_samples = torch.randn(N, z_dim)
-    generated_samples = G(latent_space_samples)
-    #plt.plot(train_data, np.arange(0, N), ".")
-    generated_samples = generated_samples.detach()
-    #plt.plot(generated_samples, np.arange(0, N), ".")
-
-    #plt.plot(x, train_data, label='Real Data')
-    #plt.plot(x, generated_samples, label='Generated Samples')
+    generated_samples = np.concatenate(generated_samples_all_windows, axis=0)
 
     plt.scatter(x, train_data, label='Real Data', marker='.')
     plt.scatter(x, generated_samples, label='Generated Samples', marker='.')
     plt.legend()
+    plt.savefig("gan_plots/results.png")
     plt.show()
-    plt.savefig("results.png")
     plt.clf()
     
     #save the generated samples: 
-    column_names = ['gyro_rad[0]']#, 'gyro_rad[1]', 'gyro_rad[2]']#, 'accelerometer_m_s2[0]', 'accelerometer_m_s2[1]', 'accelerometer_m_s2[2]']
-    df = pd.DataFrame(data=generated_samples, columns=column_names)
-    df.to_csv('generated_unfoolable_data.csv', index=False)
+    df = pd.DataFrame(data=generated_samples.flatten(), columns=column_names)
+    df.to_csv(outfilename, index=False)
     
 
     window_size = 10
@@ -174,7 +239,7 @@ def main(argv=[]):
     z_score_threshold = 2.5
     train_outliers = np.where(np.abs(train_z_scores) > z_score_threshold)[0]
 
-    generated_column_data = generated_samples.flatten().numpy()
+    generated_column_data = generated_samples.flatten()
     generated_moving_avg = np.convolve(generated_column_data, np.ones(window_size) / window_size, mode='same')
     generated_z_scores = stats.zscore(generated_column_data)
     generated_outliers = np.where(np.abs(generated_z_scores) > z_score_threshold)[0]
@@ -196,7 +261,7 @@ def main(argv=[]):
     ax2.set_ylabel('Value')
     ax2.legend()
 
-    plt.savefig("train_and_generated_data")
+    plt.savefig("gan_plots/train_and_generated_data")
     plt.show()
 
     plt.clf()

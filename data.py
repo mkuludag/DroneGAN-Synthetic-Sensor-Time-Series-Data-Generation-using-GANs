@@ -1,3 +1,14 @@
+#!/usr/bin/env python3
+
+# Author: Mehmed Kerem Uludag (muludag)
+# Email: muludag@umich.edu
+# Institution: University of Michigan
+# Department: Computer Science & Engineering and Robotics
+# Date: July 28, 2023
+# Work: This work was started in the ADWISE Lab at Florida International University as part of the Research Expereince for Undergraduates program in the Summer of 2023. 
+#
+# Description: Helper Functions for Data Pre-processing
+
 import random
 import numpy as np
 import torch
