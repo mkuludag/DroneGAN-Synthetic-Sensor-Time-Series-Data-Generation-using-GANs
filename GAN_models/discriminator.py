@@ -17,6 +17,58 @@ import torch.nn.functional as F
 from torch import Tensor
 
 
+
+
+
+class Discriminator(nn.Module):
+    def __init__(self, data_dim: int, hidden_size: int) -> None:
+        super().__init__()
+        self.l1 = nn.Sequential(
+            nn.Linear(data_dim, hidden_size),
+            #nn.ELU(alpha=0.05)
+            nn.ReLU()
+        )
+        self.l2 = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            #nn.ELU(alpha=0.05)
+            nn.ReLU()
+        )
+        self.l3 = torch.nn.Linear(hidden_size, 1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x: Tensor) -> Tensor:
+        out = self.l1(x)
+        feat = self.l2(out)
+        out = self.l3(feat)
+        out = self.sigmoid(out)
+
+        return out, feat
+    
+
+class Multi_Discriminator(nn.Module):
+    def __init__(self, data_dim: int, hidden_size: int) -> None:
+        super().__init__()
+        self.l1 = nn.Sequential(
+            nn.Linear(data_dim, hidden_size),
+            nn.ReLU()
+        )
+        self.l2 = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU()
+        )
+        self.l3 = nn.Linear(hidden_size, 1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x should be of size (k, M)
+        out = self.l1(x)
+        feat = self.l2(out)
+        out = self.l3(feat)
+        out = self.sigmoid(out)
+        
+        return out, feat
+
+
 # class Discriminator(nn.Module):
 #     def __init__(self, data_dim: int, hidden_size: int) -> None:
 #         super(Discriminator, self).__init__()
@@ -63,32 +115,6 @@ from torch import Tensor
 #         out = self.sigmoid(out)
 
 #         return out
-
-
-class Discriminator(nn.Module):
-    def __init__(self, data_dim: int, hidden_size: int) -> None:
-        super().__init__()
-        self.l1 = nn.Sequential(
-            nn.Linear(data_dim, hidden_size),
-            #nn.ELU(alpha=0.05)
-            nn.ReLU()
-        )
-        self.l2 = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size),
-            #nn.ELU(alpha=0.05)
-            nn.ReLU()
-        )
-        self.l3 = torch.nn.Linear(hidden_size, 1)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x: Tensor) -> Tensor:
-        out = self.l1(x)
-        feat = self.l2(out)
-        out = self.l3(feat)
-        out = self.sigmoid(out)
-
-        return out, feat
-
 
 class TimeSeriesDiscriminator(nn.Module):
     def __init__(self, data_dim: int, hidden_size: int) -> None:

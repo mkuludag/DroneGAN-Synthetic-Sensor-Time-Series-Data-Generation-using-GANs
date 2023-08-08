@@ -1,5 +1,5 @@
-from .discriminator import (Discriminator)
-from .generator import (Generator)
+from .discriminator import (Discriminator, Multi_Discriminator)
+from .generator import (Generator, Multi_Generator)
 
 from .autoencoder import (BasicAutoencoder)
 

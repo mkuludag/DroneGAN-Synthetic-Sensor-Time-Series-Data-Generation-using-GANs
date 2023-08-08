@@ -42,6 +42,32 @@ class Generator(nn.Module):
         out = out[:, -1, :]  # Take the last timestep output
         out = self.fc(out)
         return out
+    
+    
+class Multi_Generator(nn.Module):
+    def __init__(self, z_dim: int, hidden_size: int, data_dim: int) -> None:
+        super(Multi_Generator, self).__init__()
+        self.z_dim = z_dim
+        self.hidden_size = hidden_size
+        self.data_dim = data_dim
+
+        self.l1 = nn.Sequential(
+            nn.Linear(z_dim, hidden_size),
+            nn.ReLU()
+        )
+        self.conv1d = nn.Conv1d(hidden_size, hidden_size, kernel_size=3, padding=1)
+        self.lstm = nn.LSTM(hidden_size, hidden_size, batch_first=True)
+        self.fc = nn.Linear(hidden_size, data_dim)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x should be of size (k, M)
+        out = self.l1(x)
+        out = self.conv1d(out.transpose(1, 2))  # Transpose  for Conv1d
+        out, _ = self.lstm(out)
+        out = out[:, -1, :]  # Take the last timestep output
+        out = self.fc(out)
+        return out
+
 
     
 # original

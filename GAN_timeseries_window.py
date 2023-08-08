@@ -21,7 +21,7 @@ import scipy.stats as ss
 import torch
 from torch import nn
 
-from data import (extract_drone_data)
+from data import (extract_drone_data, extract_3multiple)
 from GAN_models import (Discriminator, Generator)
 from utility import (clear_line, clear_patch)
 import pandas as pd
@@ -36,6 +36,7 @@ import pdb
 
 def main(argv=[]): 
     # model params
+    N = 1500 #has to be divisble by minibatch size
     num_epochs: int = 400
     minibatch_size: int = 25
     d_learning_rate: float = 0.0001
@@ -58,12 +59,11 @@ def main(argv=[]):
                       f'random seed: '
 
     # input data
-    N = 1500 #has to be divisble by minibatch size
     datafile = 'ace-benign-log_0_2033-8-19-16-27-30_sensor_combined_0'
     column_names = ['gyro_rad[0]']#, 'gyro_rad[1]', 'gyro_rad[2]']#, 'accelerometer_m_s2[0]', 'accelerometer_m_s2[1]', 'accelerometer_m_s2[2]']
     outfilename = 'delete.csv'
     #data_dim = 1
-    train_labels = torch.zeros((N, data_dim))
+    #train_labels = torch.zeros((N, data_dim))
     _data = extract_drone_data(N, column_names, datafile, torch.device('cpu')).numpy()
     train_data = torch.from_numpy(_data).float()
     #train_set = [(train_data[i], train_labels[i]) for i in range(N)]
@@ -140,7 +140,7 @@ def main(argv=[]):
     
     # Training
     t1 = time()
-    max_iter = num_epochs * len(window_data) // 10 # Maximum number of iterations
+    max_iter = num_epochs# * len(window_data) // 10 # Maximum number of iterations
     
     for window in window_data:
         window_loader = torch.utils.data.DataLoader(window, batch_size=minibatch_size, shuffle=False)
