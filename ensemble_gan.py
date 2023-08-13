@@ -37,7 +37,7 @@ def main(argv=[]):
     generator_optim: str = 'sgd'
     loss_type: str = 'mse'
     z_dim: int = 5
-    data_dim: int = 1
+    data_dim: int = 3
     d_hidden_size: int = 30
     g_hidden_size: int = 30
     progress_update_interval = 20
@@ -70,7 +70,7 @@ def main(argv=[]):
     loss_function = nn.SmoothL1Loss()
     generated_samples_all_windows = []
     #generated_samples_all_windows = np.zeros_like(train_data)
-    pdb.set_trace()
+    
     # Training
     for window in window_data:
         window_loader = torch.utils.data.DataLoader(window, batch_size=minibatch_size, shuffle=False)
@@ -84,15 +84,16 @@ def main(argv=[]):
                 # Data for training the discriminator
                 real_samples_labels = torch.ones((minibatch_size, 1))
                 latent_space_samples = torch.randn((minibatch_size, z_dim))
+                #pdb.set_trace()
                 generated_samples = G(latent_space_samples)
                 generated_samples_labels = torch.zeros((minibatch_size, 1))
+                #print(real_samples.shape, " ", generated_samples.shape)
                 all_samples = torch.cat((real_samples, generated_samples))
                 all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
 
                 # Train Discriminator: 
                 D.zero_grad() # thid needed? 
                 output_discriminator = D(all_samples)
-                #pdb.set_trace()
                 loss_discriminator = loss_function(output_discriminator[0], all_samples_labels)
                 loss_discriminator.backward()
                 d_optimizer.step()
@@ -120,22 +121,24 @@ def main(argv=[]):
         generated_samples_all_windows.append(generated_samples_window)
     
     generated_samples_all_windows = np.array(generated_samples_all_windows)
-    pdb.set_trace()
-
+    
     # Create a figure with M subplots
+    G_reshaped = generated_samples_all_windows.reshape(train_data.shape)
     x = np.arange(0, N)
     fig, axes = plt.subplots(nrows=M, ncols=1, figsize=(8, 6 * M))
     for i in range(M):
         ax = axes[i]
         ax.scatter(x, train_data[:, i], label='Train Data', color='blue')
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
+        ax.scatter(x, G_reshaped[:, i], label='Generated Data', color='orange')
+        ax.set_xlabel('Time Stamps')
+        ax.set_ylabel('Data Sensor Readings')
         ax.set_title(f'Graph {i+1}')
         ax.legend()
 
     plt.tight_layout()
 
     # Show the figure
+    plt.savefig("ensemble_gan_plots/all_sensors.png")
     plt.show()
     
     return

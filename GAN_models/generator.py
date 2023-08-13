@@ -15,6 +15,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch import Tensor
+import pdb
 
 
 class Generator(nn.Module):
@@ -55,19 +56,38 @@ class Multi_Generator(nn.Module):
             nn.Linear(z_dim, hidden_size),
             nn.ReLU()
         )
-        self.conv1d = nn.Conv1d(hidden_size, hidden_size, kernel_size=3, padding=1)
+        self.conv2d = nn.Conv2d(in_channels=hidden_size, out_channels=hidden_size, kernel_size=3, padding=1)
         self.lstm = nn.LSTM(hidden_size, hidden_size, batch_first=True)
         self.fc = nn.Linear(hidden_size, data_dim)
-
+        
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x should be of size (k, M)
         out = self.l1(x)
-        out = self.conv1d(out.transpose(1, 2))  # Transpose  for Conv1d
+        out = out.unsqueeze(2)  # Add a new dimension for Conv2d
+        out = out.unsqueeze(3)  # Add another new dimension for Conv2d
+        out = self.conv2d(out)
+        out = out.squeeze(3)  # Remove the added dimension
+        out = out.squeeze(2)  # Remove the added dimension
         out, _ = self.lstm(out)
-        out = out[:, -1, :]  # Take the last timestep output
         out = self.fc(out)
         return out
 
+
+    # def forward(self, x: torch.Tensor) -> torch.Tensor: # helpful for debugging mismatching layers
+    #     out = self.l1(x)
+    #     print("After l1:", out.shape)
+    #     out = out.unsqueeze(2)
+    #     print("After unsqueeze:", out.shape)
+    #     out = self.l2(out)
+    #     print("After l2:", out.shape)
+    #     out = out.transpose(1, 2)
+    #     print("After transpose:", out.shape)
+    #     out, _ = self.lstm(out)
+    #     print("After lstm:", out.shape)
+    #     out = out[:, -1, :]
+    #     print("After slicing:", out.shape)
+    #     out = self.fc(out)
+    #     print("After fc:", out.shape)
+    #     return out
 
     
 # original
