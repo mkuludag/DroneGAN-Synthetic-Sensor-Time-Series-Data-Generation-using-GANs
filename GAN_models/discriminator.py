@@ -67,6 +67,19 @@ class Multi_Discriminator(nn.Module):
         out = self.sigmoid(out)
         
         return out, feat
+    
+class UAV_State_Discriminator(nn.Module):
+    def __init__(self, input_dim, hidden_size, num_states):
+        super(UAV_State_Discriminator, self).__init__()
+        self.model = nn.Sequential(
+            nn.Linear(input_dim, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, num_states),
+            nn.Softmax(dim=1)  # Softmax activation for state probabilities
+        )
+    
+    def forward(self, x):
+        return self.model(x)
 
 
 # class Discriminator(nn.Module):
