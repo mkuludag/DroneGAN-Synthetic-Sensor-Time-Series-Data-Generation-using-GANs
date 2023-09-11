@@ -59,3 +59,13 @@ def first_model(input_shape):
 #     model.add(Reshape((5, 10, 10)))
 
 #     return model
+
+def BiLSTM(input_shape):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(64, return_sequences=True), input_shape=input_shape),
+        tf.keras.layers.Dropout(0.1),
+        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(1)
+    ])
+
+    return model

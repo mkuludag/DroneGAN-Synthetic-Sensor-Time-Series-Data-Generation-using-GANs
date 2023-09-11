@@ -8,7 +8,7 @@
 # Work: This work was started in the ADWISE Lab at Florida International University as part of the Research Expereince for Undergraduates program in the Summer of 2023.
 #  
 # Description: This file evaluates the GAN generated (G) data by first training a CNN model on benign (B) and spoofed (S) data, and then uses
-# different combinations of B, S and G data to test the model acuracies.
+# different combinations of B, S and G data to test the model acuracies. From Milcom Paper
 
 import numpy as np
 import tensorflow as tf
@@ -30,22 +30,22 @@ from Class_models import first_model
 np.random.seed(123)
 
 
-N = 5000
-K = 100
+N = 2500
+K = 50
 
 shuffleSplit = True # Shuffle data during splitting between Train/Test
 shufflefit = True # Shuffle epoches during model run
 
-p1 = 'sensor-csvfiles/' + 'ace-benign-log_0_2033-8-19-16-27-30_vehicle_angular_velocity_0' + '.csv'
-p2 = 'sensor-csvfiles/' + 'ace-spoofing-hackrf-log_5_2033-8-19-17-14-18_vehicle_angular_velocity_0' + '.csv'
-p3 = 'sensor-csvfiles/' + 'xyz_gen0' + '.csv'
+p1 = 'sensor-csvfiles/' + 'combined_sensors_real' + '.csv'
+p2 = 'sensor-csvfiles/' + 'combined_sensors_spoofed.csv'
+p3 = 'sensor-csvfiles/' + 'combined_sensors_generated.csv'
 
 
 df = pd.read_csv(p1) # Benign
 df2 = pd.read_csv(p2) # Spoofed
 gen = pd.read_csv(p3) # Generated
 
-sensor_values = ['xyz[0]']#, 'gyro_rad[1]', 'gyro_rad[2]', 'accelerometer_m_s2[0]', 'accelerometer_m_s2[1]', 'accelerometer_m_s2[2]']
+sensor_values = ["gyro_rad[0]", "hover_thrust",  "xyz[0]"] #"hover_thrust",
 data_dim = len(sensor_values)
 
 df = df[sensor_values]
@@ -95,61 +95,8 @@ x_train, x_test, y_train, y_test = train_test_split(window_data, labels, test_si
 #x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size=0.2, shuffle=shuffleSplit, random_state=4)
 print(y_test.size)
 print(np.sum(y_test == 1))
-#pdb.set_trace()
 
-# N = 10
-# M = 10
-# number_of_series = 5
 
-# def snake_transpose(arr):
-#     m, n = arr.shape
-#     transposed = np.zeros((n, m))
-
-#     for i in range(m):
-#         if i % 2 == 0:
-#             transposed[:, i] = arr[:, i]
-#         else:
-#             transposed[:, i] = arr[::-1, i]
-
-#     return transposed
-
-# A = x_train.reshape(-1, number_of_series, data_dim, N, M)
-# B = x_test.reshape(-1, number_of_series, data_dim, N, M)
-# C = y_train.reshape(-1, number_of_series, N, M)
-# D = y_test.reshape(-1, number_of_series, N, M)
-
-# x_train = np.zeros(A.shape)
-# for i in range(A.shape[0]):
-#     for j in range(A.shape[1]):
-#         x_train[i, j, 0] = snake_transpose(A[i, j, 0])
-
-# x_test = np.zeros(B.shape)
-# for i in range(B.shape[0]):
-#     for j in range(B.shape[1]):
-#         x_test[i, j, 0] = snake_transpose(B[i, j, 0])
-
-# y_train = np.zeros(C.shape)
-# for i in range(C.shape[0]):
-#     for j in range(C.shape[1]):
-#         y_train[i, j] = snake_transpose(C[i, j])
-
-# y_test = np.zeros(D.shape)
-# for i in range(D.shape[0]):
-#     for j in range(D.shape[1]):
-#         y_test[i, j] = snake_transpose(D[i, j])
-        
-        
-
-# input_shape = (number_of_series, data_dim, N, M)
-# model = first_model(input_shape)
-# model.summary()
-
-# plot_model(model, to_file="my_model.png", show_shapes=True)
-
-# # following are parameters for trainig as per paper:
-# batch_size = 32
-# test_split = 0.3
-# number_of_epochs = 40
 
 
 # Compile Model

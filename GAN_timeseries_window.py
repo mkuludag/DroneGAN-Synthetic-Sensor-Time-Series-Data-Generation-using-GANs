@@ -28,6 +28,8 @@ import pandas as pd
 from scipy import stats
 import pdb
 
+import os
+
 #SEED = 13
 #np.random.seed(SEED)
 #torch.random.manual_seed(SEED)
@@ -36,7 +38,7 @@ import pdb
 
 def main(argv=[]): 
     # model params
-    N = 1500 #has to be divisble by minibatch size
+    N = 2000 #has to be divisble by minibatch size
     num_epochs: int = 400
     minibatch_size: int = 25
     d_learning_rate: float = 0.0001
@@ -59,9 +61,12 @@ def main(argv=[]):
                       f'random seed: '
 
     # input data
-    datafile = 'ace-benign-log_0_2033-8-19-16-27-30_sensor_combined_0'
-    column_names = ['gyro_rad[0]']#, 'gyro_rad[1]', 'gyro_rad[2]']#, 'accelerometer_m_s2[0]', 'accelerometer_m_s2[1]', 'accelerometer_m_s2[2]']
-    outfilename = 'delete.csv'
+    datafile = 'NDSS_data_real'
+    sensor_name = sys.argv[1]
+    column_names = [sensor_name]#, accel_x	accel_y	accel_z	gyro_x	gyro_y	gyro_z	gps_c_x	gps_c_y	gps_c_z
+    filename = sensor_name + "_gen.csv"
+    directory = "sensor-csvfiles"
+    file_path = os.path.join(directory, filename)
     #data_dim = 1
     #train_labels = torch.zeros((N, data_dim))
     _data = extract_drone_data(N, column_names, datafile, torch.device('cpu')).numpy()
@@ -224,12 +229,12 @@ def main(argv=[]):
     plt.scatter(x, generated_samples, label='Generated Samples', marker='.')
     plt.legend()
     plt.savefig("gan_plots/results.png")
-    plt.show()
+    #plt.show()
     plt.clf()
     
     #save the generated samples: 
     df = pd.DataFrame(data=generated_samples.flatten(), columns=column_names)
-    df.to_csv(outfilename, index=False)
+    df.to_csv(file_path, index=False)
     
 
     window_size = 10
@@ -262,7 +267,7 @@ def main(argv=[]):
     ax2.legend()
 
     plt.savefig("gan_plots/train_and_generated_data")
-    plt.show()
+    #plt.show()
 
     plt.clf()
 

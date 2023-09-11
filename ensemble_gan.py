@@ -36,7 +36,7 @@ def main(argv=[]):
     discriminator_optim: str = 'adam'
     generator_optim: str = 'sgd'
     loss_type: str = 'mse'
-    z_dim: int = 5
+    z_dim: int = 10
     data_dim: int = 3
     d_hidden_size: int = 30
     g_hidden_size: int = 30
@@ -44,13 +44,20 @@ def main(argv=[]):
     device = torch.device('cpu')
     
     # Input Data:    
-    outfilename = 'ensemble_out.csv'    
+    # Define the output CSV file path
+    output_csv_file = 'NDSS_data_egan.csv'
     d1 = 'gyro0_gen'
     d2 = 'hover_thrust_gen1'
     d3 = 'xyz_gen0' 
     
     N = 1000
     data = extract_3multiple(N, d1, d2, d3, torch.device('cpu')).numpy()
+    
+    #data from 1 file: 
+    d1 = pd.read_csv('sensor-csvfiles/' + 'NDSS_data_real' + '.csv')
+    data = d1[['accel_x', 'accel_y', 'gyro_x']][:N].values
+    
+    
     train_data = torch.from_numpy(data).float()
     M = train_data.shape[1]
     
@@ -120,7 +127,7 @@ def main(argv=[]):
                 
                 # Data for training the discriminator
                 real_samples_labels = torch.ones((minibatch_size, 1))
-                latent_space_samples = torch.randn((minibatch_size, z_dim))
+                latent_space_samples = torch.randn((minibatch_size, z_dim)) # find a way to add data_dim maybe???
                 #pdb.set_trace()
                 generated_samples = G(latent_space_samples)
                 generated_samples_labels = torch.zeros((minibatch_size, 1))
@@ -165,8 +172,16 @@ def main(argv=[]):
     
     generated_samples_all_windows = np.array(generated_samples_all_windows)
     
+    
+    
+    
     # Create a figure with M subplots
-    G_reshaped = generated_samples_all_windows.reshape(train_data.shape)
+    G_reshaped = generated_samples_all_windows.reshape(train_data.shape) #* 10
+    
+    # Save csv file: 
+    df = pd.DataFrame(G_reshaped, columns=['accel_x', 'accel_y', 'gyro_x'])
+    df.to_csv('sensor-csvfiles/' + output_csv_file, index=False)
+    
     x = np.arange(0, N)
     fig, axes = plt.subplots(nrows=M, ncols=1, figsize=(8, 6 * M))
     for i in range(M):
