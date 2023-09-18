@@ -61,7 +61,7 @@ def main(argv=[]):
                       f'random seed: '
 
     # input data
-    datafile = 'NDSS_data_real'
+    datafile = 'Accelerometer_real'
     sensor_name = sys.argv[1]
     column_names = [sensor_name]#, accel_x	accel_y	accel_z	gyro_x	gyro_y	gyro_z	gps_c_x	gps_c_y	gps_c_z
     filename = sensor_name + "_gen.csv"

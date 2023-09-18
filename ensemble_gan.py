@@ -29,34 +29,43 @@ import pdb
 
 
 def main(argv=[]):
-    num_epochs: int = 40
+    num_epochs: int = 400
     minibatch_size: int = 25
     d_learning_rate: float = 0.0001
     g_learning_rate: float = 0.0001
     discriminator_optim: str = 'adam'
     generator_optim: str = 'sgd'
     loss_type: str = 'mse'
-    z_dim: int = 10
-    data_dim: int = 3
+    z_dim: int = 5
+    data_dim: int = 1
     d_hidden_size: int = 30
     g_hidden_size: int = 30
     progress_update_interval = 20
     device = torch.device('cpu')
     
-    # Input Data:    
-    # Define the output CSV file path
-    output_csv_file = 'NDSS_data_egan.csv'
-    d1 = 'gyro0_gen'
-    d2 = 'hover_thrust_gen1'
-    d3 = 'xyz_gen0' 
+    # # Input Data:    baddddd
+    # d1 = 'gyro0_gen'
+    # d2 = 'hover_thrust_gen1'
+    # d3 = 'xyz_gen0' 
     
-    N = 1000
-    data = extract_3multiple(N, d1, d2, d3, torch.device('cpu')).numpy()
     
-    #data from 1 file: 
-    d1 = pd.read_csv('sensor-csvfiles/' + 'NDSS_data_real' + '.csv')
-    data = d1[['accel_x', 'accel_y', 'gyro_x']][:N].values
+    # data = extract_3multiple(N, d1, d2, d3, torch.device('cpu')).numpy()
     
+    N = 2000
+    
+    # data from 1 file: 
+    d1 = pd.read_csv('sensor-csvfiles/' + 'Accelerometer_real' + '.csv')
+    sensor_values = [
+        "accelerometer_m_s2[0]",  "accelerometer_m_s2[1]",  "accelerometer_m_s2[2]",
+        #"gyro_rad[0]", "hover_thrust",  "xyz[0]",
+        # 'accel_x', 'accel_y', 'gyro_x'
+        ]
+    data_dim: int = len(sensor_values)
+    data = d1[sensor_values][:N].values
+    
+    
+    #out file: 
+    output_csv_file = 'Accelerometer_egen.csv'
     
     train_data = torch.from_numpy(data).float()
     M = train_data.shape[1]
@@ -179,7 +188,7 @@ def main(argv=[]):
     G_reshaped = generated_samples_all_windows.reshape(train_data.shape) #* 10
     
     # Save csv file: 
-    df = pd.DataFrame(G_reshaped, columns=['accel_x', 'accel_y', 'gyro_x'])
+    df = pd.DataFrame(G_reshaped, columns=[sensor_values])
     df.to_csv('sensor-csvfiles/' + output_csv_file, index=False)
     
     x = np.arange(0, N)

@@ -18,7 +18,7 @@ from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Dropou
 import pdb
 import matplotlib.pyplot as plt
 import pandas as pd
-from sklearn.metrics import confusion_matrix, roc_curve, auc
+from sklearn.metrics import confusion_matrix, roc_curve, auc, roc_auc_score, accuracy_score
 from sklearn.model_selection import train_test_split
 from keras.models import Sequential
 from keras.utils import plot_model
@@ -30,22 +30,25 @@ from Class_models import first_model
 np.random.seed(123)
 
 
-N = 2500
+N = 4000
 K = 50
 
 shuffleSplit = True # Shuffle data during splitting between Train/Test
 shufflefit = True # Shuffle epoches during model run
 
-p1 = 'sensor-csvfiles/' + 'combined_sensors_real' + '.csv'
-p2 = 'sensor-csvfiles/' + 'combined_sensors_spoofed.csv'
-p3 = 'sensor-csvfiles/' + 'combined_sensors_generated.csv'
+p1 = 'sensor-csvfiles/' + 'Accelerometer_real.csv'
+p2 = 'sensor-csvfiles/' + 'Accelerometer_spoof.csv'
+p3 = 'sensor-csvfiles/' + 'Accelerometer_egen.csv'
 
 
 df = pd.read_csv(p1) # Benign
 df2 = pd.read_csv(p2) # Spoofed
 gen = pd.read_csv(p3) # Generated
 
-sensor_values = ["gyro_rad[0]", "hover_thrust",  "xyz[0]"] #"hover_thrust",
+sensor_values = [
+    "accelerometer_m_s2[0]",  "accelerometer_m_s2[1]",  "accelerometer_m_s2[2]",
+    #"gyro_rad[0]", "hover_thrust",  "xyz[0]",
+    ]
 data_dim = len(sensor_values)
 
 df = df[sensor_values]
@@ -59,8 +62,12 @@ df = df.values #np.concatenate((df.values, df.values, df.values), axis=0)
 df2 = df2.values #np.concatenate((df2.values, df2.values, df2.values), axis=0)
 gen = gen.values
 df = df[0:X, :]
-df2 = df2[0:X, :]
-gen = gen[:X, :] # testing on literally 25K datapoints
+df2 = df2[X:N, :]
+gen = gen[:X, :] # evaluate all columns
+#gen = np.column_stack((gen[:, 0], df[:, -2:])) # just first col
+#gen = np.column_stack((df[:, 0], gen[:, 1], df[:, 2])) # just middle col
+
+#pdb.set_trace()
 #df2 = np.arange(0, X * 0.06, 0.01).reshape(X, data_dim)
 #df2 = np.random.randint(1,50, size=(X,data_dim)) * 0.001
 
@@ -108,13 +115,32 @@ model.fit(x_train, y_train, epochs=20, batch_size=32, validation_data=(x_test, y
 
 loss, accuracy = model.evaluate(x_test, y_test)
 print(f'Test loss: {loss:.4f}')
-print(f'Test accuracy: {accuracy:.4f}')
+print(f'Benchmark accuracy (half benign/half spoofed): {accuracy:.4f}')
 
 predictions = model.predict(x_test)
 threshold = 0.5
 predicted_labels = (predictions > threshold).astype(int).reshape(y_test.shape)
 print(predicted_labels)
 cm = confusion_matrix(y_test, predicted_labels)
+
+TN, FP, FN, TP = cm.ravel()
+
+TPR = TP / (TP + FN)
+TNR = TN / (TN + FP)
+FPR = FP / (FP + TN)
+FNR = FN / (FN + TP)
+
+# Calculate ROC AUC score
+roc_auc = roc_auc_score(y_test, predictions)
+
+# Print the results
+print("True Positive Rate (TPR):", TPR)
+print("True Negative Rate (TNR):", TNR)
+print("False Positive Rate (FPR):", FPR)
+print("False Negative Rate (FNR):", FNR)
+print("ROC AUC:", roc_auc)
+
+
 
 print("number of ones in y_test:")
 print(np.sum(y_test == 1))
@@ -192,13 +218,13 @@ for i in range(0, len(df2) - K + 1, stride):
 fake_window_data = np.array(window_data)
 #gen_window_data = fake_window_data
 min_size = min(gen_window_data.shape[0], real_window_data.shape[0])
-gen_window_data = gen_window_data[:min_size]
+gen_window_data2 = gen_window_data[:min_size]
 real_window_data = real_window_data[:min_size]
 
-gen_labels = np.ones(gen_window_data.shape[0])
+gen_labels = np.ones(gen_window_data2.shape[0])
 real_labels = np.zeros(real_window_data.shape[0])
 
-combined_data = np.concatenate((gen_window_data, real_window_data), axis=0)
+combined_data = np.concatenate((gen_window_data2, real_window_data), axis=0)
 combined_labels = np.concatenate((gen_labels, real_labels), axis=0)
 
 combined_data, combined_labels = shuffle(combined_data, combined_labels)
@@ -221,7 +247,7 @@ correct_predictions = cm[0, 0] + cm[1, 1]
 
 accuracy = (correct_predictions / total_samples) * 100
 
-print(f"Accuracy: {accuracy:.2f}%")
+print(f"half B half G or S Accuracy: {accuracy:.2f}%")
 
 plt.imshow(cm, cmap='Blues')
 plt.title('Confusion Matrix')
@@ -233,6 +259,35 @@ plt.yticks([0, 1], ['Real', 'Fake'])
 plt.savefig("class_plots/confustionMatrix2")
 plt.show()
 plt.clf()
+
+
+# all G data
+labels = np.ones(gen_window_data.shape[0])
+predictions = model.predict(gen_window_data)
+class_correct_predictions = (predictions > 0.5).astype(int)
+accuracy = accuracy_score(labels, class_correct_predictions)
+
+# Print the accuracy
+print("All G Accuracy:", accuracy)
+cm = confusion_matrix(labels, class_correct_predictions)
+
+TN, FP, FN, TP = cm.ravel()
+
+# Calculate True Positive Rate (TPR), True Negative Rate (TNR), False Positive Rate (FPR), and False Negative Rate (FNR)
+TPR = TP / (TP + FN)
+TNR = TN / (TN + FP)
+FPR = FP / (FP + TN)
+FNR = FN / (FN + TP)
+
+# Calculate ROC AUC score
+#roc_auc = roc_auc_score(labels, class_correct_predictions)
+
+# Print the results
+print("True Positive Rate (TPR):", TPR)
+print("True Negative Rate (TNR):", TNR)
+print("False Positive Rate (FPR):", FPR)
+print("False Negative Rate (FNR):", FNR)
+#print("ROC AUC:", roc_auc)
 
 
 # Create a single figure for all graphs
