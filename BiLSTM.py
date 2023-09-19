@@ -5,7 +5,7 @@ import pdb
 import pandas as pd
 
 real_data = pd.read_csv("sensor-csvfiles/Accelerometer_real.csv")
-generated_data = pd.read_csv("sensor-csvfiles/Accelerometer_gen.csv")
+# generated_data = pd.read_csv("sensor-csvfiles/Accelerometer_gen.csv")
 
 sensor_names = [
     #"gyro_rad[0]", "gyro_rad[2]",  "xyz[0]"
