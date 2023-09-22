@@ -38,7 +38,7 @@ import os
 
 def main(argv=[]): 
     # model params
-    N = 2000 #has to be divisble by minibatch size
+    N = 2000 #49200 #has to be divisble by minibatch size
     num_epochs: int = 400
     minibatch_size: int = 25
     d_learning_rate: float = 0.0001
@@ -61,10 +61,10 @@ def main(argv=[]):
                       f'random seed: '
 
     # input data
-    datafile = 'Accelerometer_real'
+    datafile = 'ace-benign-log_0_2033-8-19-16-27-30_sensor_combined_0'
     sensor_name = sys.argv[1]
     column_names = [sensor_name]#, accel_x	accel_y	accel_z	gyro_x	gyro_y	gyro_z	gps_c_x	gps_c_y	gps_c_z
-    filename = sensor_name + "_gen.csv"
+    filename = sensor_name + "_gen2.csv"
     directory = "sensor-csvfiles"
     file_path = os.path.join(directory, filename)
     #data_dim = 1
@@ -224,7 +224,7 @@ def main(argv=[]):
 
     x = np.arange(0, N)
     generated_samples = np.concatenate(generated_samples_all_windows, axis=0)
-
+    pdb.set_trace()
     plt.scatter(x, train_data, label='Real Data', marker='.')
     plt.scatter(x, generated_samples, label='Generated Samples', marker='.')
     plt.legend()
