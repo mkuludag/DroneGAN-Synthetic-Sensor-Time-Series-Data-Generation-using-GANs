@@ -51,21 +51,29 @@ def main(argv=[]):
     
     # data = extract_3multiple(N, d1, d2, d3, torch.device('cpu')).numpy()
     
-    N = 2000
+    N = 200 #2000
     
     # data from 1 file: 
-    d1 = pd.read_csv('sensor-csvfiles/' + 'Accelerometer_real' + '.csv')
-    sensor_values = [
-        "accelerometer_m_s2[0]",  "accelerometer_m_s2[1]",  "accelerometer_m_s2[2]",
-        #"gyro_rad[0]", "hover_thrust",  "xyz[0]",
-        # 'accel_x', 'accel_y', 'gyro_x'
-        ]
+    d1 = pd.read_csv('sensor-csvfiles/' + 'GL_combined_gen5' + '.csv')
+    # sensor_values = [
+    #     "accelerometer_m_s2[0]",  # x
+    #     "accelerometer_m_s2[1]",  # y
+    #     "accelerometer_m_s2[2]",  # z
+    #     "gyro_rad[0]",            # x
+    #     "gyro_rad[1]",            # y
+    #     "gyro_rad[2]",            # z
+        
+    #     #"gyro_rad[0]", "hover_thrust",  "xyz[0]",
+    #     # 'accel_x', 'accel_y', 'gyro_x'
+    #     ]
+   # pdb.set_trace()
+    sensor_values = sys.argv[1:]
     data_dim: int = len(sensor_values)
     data = d1[sensor_values][:N].values
     
     
     #out file: 
-    output_csv_file = 'Accelerometer_egen.csv'
+    output_csv_file = f'Egan_{sensor_values}.csv'
     
     train_data = torch.from_numpy(data).float()
     M = train_data.shape[1]
@@ -181,12 +189,11 @@ def main(argv=[]):
     
     generated_samples_all_windows = np.array(generated_samples_all_windows)
     
-    
-    
-    
+
     # Create a figure with M subplots
-    G_reshaped = generated_samples_all_windows.reshape(train_data.shape) #* 10
-    
+    #G_reshaped = generated_samples_all_windows.reshape(train_data.shape) #* 10
+    G_reshaped = np.concatenate(generated_samples_all_windows, axis=0)
+    pdb.set_trace()
     # Save csv file: 
     df = pd.DataFrame(G_reshaped, columns=[sensor_values])
     df.to_csv('sensor-csvfiles/' + output_csv_file, index=False)
