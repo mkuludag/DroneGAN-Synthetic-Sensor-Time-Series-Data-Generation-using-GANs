@@ -72,17 +72,19 @@ def get_predictions(model, x_test_scaled, threshold):
 # spoofed_data = pd.read_csv("sensor-csvfiles/Accelerometer_spoof.csv")
 
 real_data = pd.read_csv("test_data/benign_data/sensor_combined.csv")
-generated_data1 = pd.read_csv("test_data/latest_gan_data_singular/accelerometer_m_s2[0].csv")
-generated_data2 = pd.read_csv("test_data/latest_gan_data_singular/accelerometer_m_s2[1].csv")
-generated_data3 = pd.read_csv("test_data/latest_gan_data_singular/accelerometer_m_s2[2].csv")
+# generated_data1 = pd.read_csv("test_data/latest_gan_data_singular/accelerometer_m_s2[0].csv")
+# generated_data2 = pd.read_csv("test_data/latest_gan_data_singular/accelerometer_m_s2[1].csv")
+# generated_data3 = pd.read_csv("test_data/latest_gan_data_singular/accelerometer_m_s2[2].csv")
 
-generated_data4 = pd.read_csv("test_data/latest_gan_data_singular/gyro_rad[0].csv")
-generated_data5 = pd.read_csv("test_data/latest_gan_data_singular/gyro_rad[1].csv")
-generated_data6 = pd.read_csv("test_data/latest_gan_data_singular/gyro_rad[2].csv")
+# generated_data4 = pd.read_csv("test_data/latest_gan_data_singular/gyro_rad[0].csv")
+# generated_data5 = pd.read_csv("test_data/latest_gan_data_singular/gyro_rad[1].csv")
+# generated_data6 = pd.read_csv("test_data/latest_gan_data_singular/gyro_rad[2].csv")
 
 spoofed_data = pd.read_csv("test_data/gps_spoofing_data/sensor_combined.csv")
 jammed_data = pd.read_csv("test_data/gps_jamming_data/sensor_combined.csv")
 
+
+generated_data = pd.read_csv("test_data/ensemble_gan_data/Egan_['accelerometer_m_s2[0]', 'accelerometer_m_s2[1]', 'accelerometer_m_s2[2]'].csv")
 
 sensor_names = [
     #"gyro_rad[0]", "gyro_rad[2]",  "xyz[0]"
@@ -178,45 +180,18 @@ X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.3, shuffle=T
 print(X_train.shape)
 
 total_number_of_gan_samples = int(total_number_of_samples*0.3)
-if len(generated_data4) < int(total_number_of_samples*0.3):
-   total_number_of_gan_samples = len(generated_data4)
+if len(generated_data) < int(total_number_of_samples*0.3):
+   total_number_of_gan_samples = len(generated_data)
 print("Total number of GAN Samples")
 print(total_number_of_gan_samples)
 
 # step 1 - scale data
-scaled_features_gan1 = StandardScaler().fit_transform(generated_data1.values)
-gan_data_scaled1 = pd.DataFrame(scaled_features_gan1, index=generated_data1.index, columns=generated_data1.columns)
-
-scaled_features_gan2 = StandardScaler().fit_transform(generated_data2.values)
-gan_data_scaled2 = pd.DataFrame(scaled_features_gan2, index=generated_data2.index, columns=generated_data2.columns)
-
-scaled_features_gan3 = StandardScaler().fit_transform(generated_data3.values)
-gan_data_scaled3 = pd.DataFrame(scaled_features_gan3, index=generated_data3.index, columns=generated_data3.columns)
-
-scaled_features_gan4 = StandardScaler().fit_transform(generated_data4.values)
-gan_data_scaled4 = pd.DataFrame(scaled_features_gan4, index=generated_data4.index, columns=generated_data4.columns)
-
-scaled_features_gan5 = StandardScaler().fit_transform(generated_data5.values)
-gan_data_scaled5 = pd.DataFrame(scaled_features_gan5, index=generated_data5.index, columns=generated_data5.columns)
-
-scaled_features_gan6 = StandardScaler().fit_transform(generated_data6.values)
-gan_data_scaled6 = pd.DataFrame(scaled_features_gan6, index=generated_data6.index, columns=generated_data6.columns)
+scaled_features_gan = StandardScaler().fit_transform(generated_data.values)
+gan_data_scaled = pd.DataFrame(scaled_features_gan, index=generated_data.index, columns=generated_data.columns)
 
 # step 3 - normalize data
-generated_data_normalized1 = gan_data_scaled1.apply(lambda iterator: ((iterator.max() - iterator)/(iterator.max() - iterator.min())).round(2))
+generated_data_normalized = gan_data_scaled.apply(lambda iterator: ((iterator.max() - iterator)/(iterator.max() - iterator.min())).round(2))
 
-generated_data_normalized2 = gan_data_scaled2.apply(lambda iterator: ((iterator.max() - iterator)/(iterator.max() - iterator.min())).round(2))
-
-generated_data_normalized3 = gan_data_scaled3.apply(lambda iterator: ((iterator.max() - iterator)/(iterator.max() - iterator.min())).round(2))
-
-generated_data_normalized4 = gan_data_scaled4.apply(lambda iterator: ((iterator.max() - iterator)/(iterator.max() - iterator.min())).round(2))
-
-generated_data_normalized5 = gan_data_scaled5.apply(lambda iterator: ((iterator.max() - iterator)/(iterator.max() - iterator.min())).round(2))
-
-generated_data_normalized6 = gan_data_scaled6.apply(lambda iterator: ((iterator.max() - iterator)/(iterator.max() - iterator.min())).round(2))
-
-print(len(generated_data_normalized4))
-print(total_number_of_gan_samples)
 
 gan_data = []
 gan_label = []
@@ -228,12 +203,12 @@ for i in range(total_number_of_gan_samples):
     sample_real_data = real_data_normalized[sensor_names].iloc[total_number_of_samples+i].values
     # if np.array(sample_real_data) not in X_train:
     # gan_data.append(sample)
-    sample_real_data[0] = generated_data_normalized4['gyro_rad[0]'].iloc[i]
-    sample_real_data[1] = generated_data_normalized5['gyro_rad[1]'].iloc[i]
-    sample_real_data[2] = generated_data_normalized6['gyro_rad[2]'].iloc[i]
-    sample_real_data[3] = generated_data_normalized1['accelerometer_m_s2[0]'].iloc[i]
-    sample_real_data[4] = generated_data_normalized2['accelerometer_m_s2[1]'].iloc[i]
-    sample_real_data[5] = generated_data_normalized3['accelerometer_m_s2[2]'].iloc[i]
+    # sample_real_data[0] = generated_data_normalized['gyro_rad[0]'].iloc[i]
+    # sample_real_data[1] = generated_data_normalized['gyro_rad[1]'].iloc[i]
+    # sample_real_data[2] = generated_data_normalized['gyro_rad[2]'].iloc[i]
+    sample_real_data[3] = generated_data_normalized['accelerometer_m_s2[0]'].iloc[i]
+    sample_real_data[4] = generated_data_normalized['accelerometer_m_s2[1]'].iloc[i]
+    sample_real_data[5] = generated_data_normalized['accelerometer_m_s2[2]'].iloc[i]
     gan_data.append(sample_real_data)
     gan_test_data.append(sample_real_data)
     gan_label.append(1)
