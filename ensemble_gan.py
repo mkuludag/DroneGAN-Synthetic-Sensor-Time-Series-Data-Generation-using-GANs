@@ -51,7 +51,7 @@ def main(argv=[]):
     
     # data = extract_3multiple(N, d1, d2, d3, torch.device('cpu')).numpy()
     
-    N = 200 #2000
+    N = 5000 #2000
     
     # data from 1 file: 
     d1 = pd.read_csv('sensor-csvfiles/' + 'GL_combined_gen5' + '.csv')
@@ -200,19 +200,47 @@ def main(argv=[]):
     
     x = np.arange(0, N)
     fig, axes = plt.subplots(nrows=M, ncols=1, figsize=(8, 6 * M))
-    for i in range(M):
-        ax = axes[i]
-        ax.scatter(x, train_data[:, i], label='Train Data', color='blue')
-        ax.scatter(x, G_reshaped[:, i], label='Generated Data', color='orange')
-        ax.set_xlabel('Time Stamps')
-        ax.set_ylabel('Data Sensor Readings')
-        ax.set_title(f'Graph {i+1}')
-        ax.legend()
+    # for i in range(M):
+    #     ax = axes[i]
+    #     ax.scatter(x, train_data[:, i], label='Train Data', color='blue')
+    #     ax.scatter(x, G_reshaped[:, i], label='Generated Data', color='orange')
+    #     ax.set_xlabel('Time Stamps')
+    #     ax.set_ylabel('Data Sensor Readings')
+    #     ax.set_title(f'Graph {i+1}')
+    #     ax.legend()
+    
+    i = 0
+    ax = axes[i]
+    ax.scatter(x, train_data[:, i], label='Train Data', color='blue')
+    ax.scatter(x, G_reshaped[:, i], label='Generated Data', color='orange')
+    ax.set_xlabel('Time Stamps')
+    ax.set_ylabel("gyro_X")
+    #ax.set_title(f'Graph {i+1}')
+    ax.legend()
+
+    i = 1
+    ax = axes[i]
+    ax.scatter(x, train_data[:, i], label='Train Data', color='blue')
+    ax.scatter(x, G_reshaped[:, i], label='Generated Data', color='orange')
+    ax.set_xlabel('Time Stamps')
+    ax.set_ylabel("gyro_Y")
+    #ax.set_title(f'Graph {i+1}')
+    ax.legend()
+    
+    i = 2
+    ax = axes[i]
+    ax.scatter(x, train_data[:, i], label='Train Data', color='blue')
+    ax.scatter(x, G_reshaped[:, i], label='Generated Data', color='orange')
+    ax.set_xlabel('Time Stamps')
+    ax.set_ylabel("gyro_Z")
+    #ax.set_title(f'Graph {i+1}')
+    ax.legend()
 
     plt.tight_layout()
 
     # Show the figure
-    plt.savefig("ensemble_gan_plots/all_sensors.png")
+    plt.savefig("ensemble_gan_plots/all_sensors6.png", dpi=500)
+    plt.savefig("ensemble_gan_plots/all_sensors6.pdf", format="pdf")
     plt.show()
     
     

@@ -18,9 +18,9 @@ arguments_list = [
     # "gps_x",
     # "gps_y",
     # "gps_z"
-    "accelerometer_m_s2[0]",
-    "accelerometer_m_s2[1]",
-    "accelerometer_m_s2[2]",
+    # "accelerometer_m_s2[0]",
+    # "accelerometer_m_s2[1]",
+    # "accelerometer_m_s2[2]",
      "gyro_rad[0]",
      "gyro_rad[1]",
      "gyro_rad[2]",
