@@ -202,7 +202,7 @@ gan_data_scaled5 = pd.DataFrame(scaled_features_gan5, index=generated_data5.inde
 scaled_features_gan6 = StandardScaler().fit_transform(generated_data6.values)
 gan_data_scaled6 = pd.DataFrame(scaled_features_gan6, index=generated_data6.index, columns=generated_data6.columns)
 
-# step 3 - normalize data
+# step 2 - normalize data
 generated_data_normalized1 = gan_data_scaled1.apply(lambda iterator: ((iterator.max() - iterator)/(iterator.max() - iterator.min())).round(2))
 
 generated_data_normalized2 = gan_data_scaled2.apply(lambda iterator: ((iterator.max() - iterator)/(iterator.max() - iterator.min())).round(2))

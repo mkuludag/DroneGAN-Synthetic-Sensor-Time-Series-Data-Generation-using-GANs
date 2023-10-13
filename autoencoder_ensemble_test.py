@@ -87,14 +87,13 @@ jammed_data = pd.read_csv("test_data/gps_jamming_data/sensor_combined.csv")
 generated_data = pd.read_csv("test_data/ensemble_gan_data/Egan_['accelerometer_m_s2[0]', 'accelerometer_m_s2[1]', 'accelerometer_m_s2[2]'].csv")
 
 sensor_names = [
-    #"gyro_rad[0]", "gyro_rad[2]",  "xyz[0]"
-    # "accelerometer_m_s2[0]",  "accelerometer_m_s2[1]",  "accelerometer_m_s2[2]",
-    # 
-    # "gyro_x", "gyro_y", "gyro_z", "accel_x", "accel_y", "accel_z", "gps_x", "gps_y", "gps_z", "mag_x", "mag_y", "mag_z"
-    "gyro_rad[0]", "gyro_rad[1]", "gyro_rad[2]",
-    "accelerometer_m_s2[0]", "accelerometer_m_s2[1]", "accelerometer_m_s2[2]"
-
-    ] #"hover_thrust",
+    "gyro_rad[0]", 
+    "gyro_rad[1]", 
+    "gyro_rad[2]",
+    "accelerometer_m_s2[0]", 
+    "accelerometer_m_s2[1]", 
+    "accelerometer_m_s2[2]"
+    ] 
 
 gan_sensor_names1 = [
    "accelerometer_m_s2[0]"

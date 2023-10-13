@@ -39,3 +39,4 @@ plt.legend(bbox_to_anchor =(0.47,-0.35), loc='lower center', ncol=2,  fontsize=1
 plt.tight_layout()
 # Show the plot
 plt.show()
+
